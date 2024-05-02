@@ -1,6 +1,7 @@
 import streamlit as st
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+import random
 
 CLIENT_ID = "42f5d27a2a6e4ef58622fcb380d40a53"
 CLIENT_SECRET = "8eb954410e5e43dda1fef88b50863edb"
@@ -15,61 +16,51 @@ def get_song_info(song_name, artist_name):
     if results and results["tracks"]["items"]:
         track = results["tracks"]["items"][0]
         album_cover_url = track["album"]["images"][0]["url"]
-        return track["name"], track["artists"][0]["name"], album_cover_url
+        return track["name"], artist_name, album_cover_url
     else:
         return song_name, artist_name, "https://i.posting.cc/0QNxYz4V/social.png"
 
 def recommend(selected_mode):
-    if selected_mode == "Happy":
-        recommended_music = [
-            ("Happy", "Pharrell Williams"),
-            ("Walking on Sunshine", "Katrina and the Waves"),
-            ("Can't Stop the Feeling!", "Justin Timberlake"),
-            ("I Gotta Feeling", "The Black Eyed Peas"),
-            ("Happy Together", "The Turtles")
-        ]
-    elif selected_mode == "Sad":
-        recommended_music = [
-            ("Someone Like You", "Adele"),
-            ("Yesterday", "The Beatles"),
-            ("Hurt", "Johnny Cash"),
-            ("Everybody Hurts", "R.E.M."),
-            ("Nothing Compares 2 U", "Sinead O'Connor")
-        ]
-    elif selected_mode == "Energetic":
-        recommended_music = [
-            ("Eye of the Tiger", "Survivor"),
-            ("Thunderstruck", "AC/DC"),
-            ("Shake It Off", "Taylor Swift"),
-            ("Born to Run", "Bruce Springsteen"),
-            ("Fight For Your Right", "Beastie Boys")
-        ]
-    elif selected_mode == "Relaxed":
-        recommended_music = [
-            ("Hotel California", "Eagles"),
-            ("Wonderwall", "Oasis"),
-            ("Imagine", "John Lennon"),
-            ("Sitting on the Dock of the Bay", "Otis Redding"),
-            ("Redemption Song", "Bob Marley")
-        ]
-    else:
-        recommended_music = []
+    mood_keywords = {
+        "Happy": ["happy", "joyful", "uplifting"],
+        "Sad": ["sad", "melancholic", "tearful"],
+        "Energetic": ["energetic", "dynamic", "exciting"],
+        "Relaxed": ["relaxed", "calm", "peaceful"]
+    }
+
+    filtered_songs = []
+    for keyword in mood_keywords.get(selected_mode, []):
+        search_results = sp.search(q=keyword, type="track", limit=5)
+        if search_results and search_results["tracks"]["items"]:
+            for track in search_results["tracks"]["items"]:
+                song_name = track["name"]
+                artist_name = track["artists"][0]["name"]
+                filtered_songs.append((song_name, artist_name))
     
-    recommended_music_info = [get_song_info(song_name, artist_name) for song_name, artist_name in recommended_music]
-    return recommended_music_info
+    return filtered_songs
+
+def detect_mood(user_input):
+    return random.choice(["Happy", "Sad", "Energetic", "Relaxed"])
 
 st.header('Music Recommender System')
 
-mode = st.selectbox("What is your current mood?", ["Happy", "Sad", "Energetic", "Relaxed"])
+user_input = st.text_input("How are you feeling today?")
 
-if st.button('Show Recommendation'):
-    recommended_music_info = recommend(mode)
-    if recommended_music_info:
-        col1, col2 = st.columns(2)
-        for song_name, artist_name, album_cover_url in recommended_music_info:
-            with col1:
-                st.text(f"{song_name} by {artist_name}")
-                st.image(album_cover_url, width=200)
-            col1, col2 = col2, col1  # Swap columns for the next iteration
+if st.button('Detect Mood and Show Recommendation'):
+    detected_mood = detect_mood(user_input)
+    if detected_mood:
+        st.write(f"Detected mood: {detected_mood}")
+        recommended_music_info = recommend(detected_mood)
+        if recommended_music_info:
+            col1, col2 = st.columns(2)
+            for song_name, artist_name in recommended_music_info:
+                song_name, artist_name, album_cover_url = get_song_info(song_name, artist_name)
+                with col1:
+                    st.text(f"Song: {song_name}")
+                    st.text(f"Artist: {artist_name}")
+                    st.image(album_cover_url, width=200)
+                col1, col2 = col2, col1 
+        else:
+            st.write("No recommendations available.")
     else:
-        st.write("No recommendations available.")
+        st.write("Could not detect mood. Please provide more information.")
