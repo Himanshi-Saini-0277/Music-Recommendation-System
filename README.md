@@ -1,4 +1,4 @@
-# Music-Recommendation-System
+# Music Recommendation System
 
 ## Introduction
 The Music Mood Recommender System is a Streamlit web application that recommends music tracks based on the user's mood input. It utilizes the Spotipy library to fetch music data from the Spotify API and provides recommendations according to the detected mood.
